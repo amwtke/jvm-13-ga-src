@@ -38,7 +38,7 @@
 #include "jvm.h"
 
 #include "java_lang_Object.h"
-
+//xiaojin native method wait notify notifyAll clone hashCode。也可以搜索：JNINativ【eMethod.】*= 查找所有的native method定义。
 static JNINativeMethod methods[] = {
     {"hashCode",    "()I",                    (void *)&JVM_IHashCode},
     {"wait",        "(J)V",                   (void *)&JVM_MonitorWait},

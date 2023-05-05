@@ -26,3 +26,5 @@ configure
 doc/
 test/
 make/
+*.class
+*.java
