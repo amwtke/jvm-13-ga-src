@@ -42,6 +42,7 @@ inline void OrderAccess::storestore() { compiler_barrier(); }
 inline void OrderAccess::loadstore()  { compiler_barrier(); }
 inline void OrderAccess::storeload()  { fence();            }
 
+//!xiaojin volatile -7.1 x86 就只需要一个编译器的优化禁用就行了。
 inline void OrderAccess::acquire()    { compiler_barrier(); }
 inline void OrderAccess::release()    { compiler_barrier(); }
 

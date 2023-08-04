@@ -512,7 +512,7 @@ extern "C" {                                                         \
 
 
 // Definitions for JVM
-
+//!xiaojin JVM_ENTRY宏 在方法中隐藏加入了thread参数
 #define JVM_ENTRY(result_type, header)                               \
 extern "C" {                                                         \
   result_type JNICALL header {                                       \

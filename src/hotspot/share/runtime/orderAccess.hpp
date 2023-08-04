@@ -248,6 +248,7 @@ template <ScopedFenceType T>
 class ScopedFence : public ScopedFenceGeneral<T> {
   void *const _field;
  public:
+ //!xiaojin volatile -6.7(impo) 执行了：f((void*)p) 自动会调用 prefix() -> 最后到：ScopedFenceGeneral<T>::prefix();
   ScopedFence(void *const field) : _field(field) { prefix(); }
   ~ScopedFence() { postfix(); }
   void prefix() { ScopedFenceGeneral<T>::prefix(); }
@@ -310,12 +311,13 @@ template<size_t byte_size, ScopedFenceType type>
 struct OrderAccess::PlatformOrderedLoad {
   template <typename T>
   T operator()(const volatile T* p) const {
+    //!xiaojin volatile -6.5 ordered_load<T, type>(p) type = X_ACQUIRE
     return ordered_load<T, type>(p);
   }
 };
 
 #include OS_CPU_HEADER(orderAccess)
-
+//!xiaojin volatile -6.8 (impo)最重要的一个调用，走向了平台相关了。OrderAccess::acquire().(exp get_volatile的本质)：就是在访问变量时，在前面额外加入了内存访问的代码，在不同的平台CPU，根据内存模型来定制不同的汇编。
 template<> inline void ScopedFenceGeneral<X_ACQUIRE>::postfix()       { OrderAccess::acquire(); }
 template<> inline void ScopedFenceGeneral<RELEASE_X>::prefix()        { OrderAccess::release(); }
 template<> inline void ScopedFenceGeneral<RELEASE_X_FENCE>::prefix()  { OrderAccess::release(); }
@@ -330,12 +332,15 @@ inline void OrderAccess::ordered_store(volatile FieldType* p, FieldType v) {
 
 template <typename FieldType, ScopedFenceType FenceType>
 inline FieldType OrderAccess::ordered_load(const volatile FieldType* p) {
+  //!xiaojin volatile -6.6 跟平台相关的代码在这里：ScopedFence FenceType = X_ACQUIRE
   ScopedFence<FenceType> f((void*)p);
-  return Atomic::load(p);
+  return Atomic::load(p);//!除了检测类型 没做啥
 }
 
+//!xiaojin volatile -6.3 OrderAccess::load_acquire 已经进入了jvm JMM的模型了。
 template <typename T>
 inline T OrderAccess::load_acquire(const volatile T* p) {
+  //!xiaojin volatile -6.4 实际调用点是在 PlatformOrderedLoad<sizeof(T), X_ACQUIRE> >() 而且要注意 X_ACQUIRE这个标志
   return LoadImpl<T, PlatformOrderedLoad<sizeof(T), X_ACQUIRE> >()(p);
 }
 

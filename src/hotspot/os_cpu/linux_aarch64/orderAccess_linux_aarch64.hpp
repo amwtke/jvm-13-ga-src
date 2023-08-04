@@ -37,6 +37,7 @@ inline void OrderAccess::storestore() { release(); }
 inline void OrderAccess::loadstore()  { acquire(); }
 inline void OrderAccess::storeload()  { fence(); }
 
+//!xiaojin volatile -7.2 arm64。到C++的标准库了 std::atomic_thread_fence。参考：https://en.cppreference.com/w/cpp/atomic/atomic_thread_fence
 inline void OrderAccess::acquire() {
   READ_MEM_BARRIER;
 }

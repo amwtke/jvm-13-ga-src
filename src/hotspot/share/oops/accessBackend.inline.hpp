@@ -126,12 +126,13 @@ inline bool RawAccessBarrier<decorators>::oop_arraycopy(arrayOop src_obj, size_t
                    length);
 }
 
+//!xiaojin volatile -6.2 RawAccessBarrier<decorators>::load_internal
 template <DecoratorSet decorators>
 template <DecoratorSet ds, typename T>
 inline typename EnableIf<
   HasDecorator<ds, MO_SEQ_CST>::value, T>::type
 RawAccessBarrier<decorators>::load_internal(void* addr) {
-  if (support_IRIW_for_not_multiple_copy_atomic_cpu) {
+  if (support_IRIW_for_not_multiple_copy_atomic_cpu) {//! false x86好像没有定义
     OrderAccess::fence();
   }
   return OrderAccess::load_acquire(reinterpret_cast<const volatile T*>(addr));

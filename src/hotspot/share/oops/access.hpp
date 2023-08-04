@@ -32,10 +32,10 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
+//!xiaojin volatile -1.9 Access类 内存访问相关的。
 // = GENERAL =
-// Access is an API for performing accesses with declarative semantics. Each access can have a number of "decorators".
-// A decorator is an attribute or property that affects the way a memory access is performed in some way.
+//! Access is an API for performing accesses with declarative semantics. Each access can have a number of "decorators".
+//! A decorator is an attribute or property that affects the way a memory access is performed in some way.
 // There are different groups of decorators. Some have to do with memory ordering, others to do with,
 // e.g. strength of references, strength of GC barriers, or whether compression should be applied or not.
 // Some decorators are set at buildtime, such as whether primitives require GC barriers or not, others
@@ -47,10 +47,10 @@
 // expressing these orthogonal semantic properties in a unified way.
 //
 // == OPERATIONS ==
-// * load: Load a value from an address.
-// * load_at: Load a value from an internal pointer relative to a base object.
-// * store: Store a value at an address.
-// * store_at: Store a value in an internal pointer relative to a base object.
+//! * load: Load a value from an address.
+//! * load_at: Load a value from an internal pointer relative to a base object.
+//! * store: Store a value at an address.
+//! * store_at: Store a value in an internal pointer relative to a base object.
 // * atomic_cmpxchg: Atomically compare-and-swap a new value at an address if previous value matched the compared value.
 // * atomic_cmpxchg_at: Atomically compare-and-swap a new value at an internal pointer address if previous value matched the compared value.
 // * atomic_xchg: Atomically swap a new value at an address if previous value matched the compared value.
@@ -62,7 +62,7 @@
 //
 // == IMPLEMENTATION ==
 // Each access goes through the following steps in a template pipeline.
-// There are essentially 5 steps for each access:
+//! There are essentially 5 steps for each access:
 // * Step 1:   Set default decorators and decay types. This step gets rid of CV qualifiers
 //             and sets default decorators to sensible values.
 // * Step 2:   Reduce types. This step makes sure there is only a single T type and not
@@ -213,7 +213,7 @@ public:
     verify_decorators<IN_HEAP>();
     AccessInternal::clone<decorators>(src, dst, size);
   }
-
+//!xiaojin volatile -2 Access -> load  decorators来自泛型
   // Primitive accesses
   template <typename P>
   static inline P load(P* addr) {

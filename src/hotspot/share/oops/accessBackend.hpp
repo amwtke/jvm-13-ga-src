@@ -234,6 +234,7 @@ protected:
   }
 
 protected:
+//!xiaojin volatile -6.1 RawAccessBarrier::load_internal<MO_SEQ_CST>
   template <DecoratorSet ds, typename T>
   static typename EnableIf<
     HasDecorator<ds, MO_SEQ_CST>::value, T>::type
@@ -340,7 +341,7 @@ public:
   static inline void store(void* addr, T value) {
     store_internal<decorators>(addr, value);
   }
-
+//!xiaojin volatile -6 RawAccessBarrier -> load
   template <typename T>
   static inline T load(void* addr) {
     return load_internal<decorators, T>(addr);
@@ -743,6 +744,7 @@ namespace AccessInternal {
       }
     }
 
+//!xiaojin volatile -5 PreRuntimeDispatch::load 有AS_RAW
     template <DecoratorSet decorators, typename T>
     inline static typename EnableIf<
       HasDecorator<decorators, AS_RAW>::value && CanHardwireRaw<decorators>::value, T>::type
@@ -750,7 +752,7 @@ namespace AccessInternal {
       typedef RawAccessBarrier<decorators & RAW_DECORATOR_MASK> Raw;
       if (HasDecorator<decorators, INTERNAL_VALUE_IS_OOP>::value) {
         return Raw::template oop_load<T>(addr);
-      } else {
+      } else {//!应该走到这里，volatile一般修饰primitive的类型 如 int long等。
         return Raw::template load<T>(addr);
       }
     }
@@ -1107,6 +1109,7 @@ namespace AccessInternal {
 
   template <DecoratorSet decorators, typename T>
   inline T load_reduce_types(T* addr) {
+    //!xiaojin volatile -4 AccessInternal::PreRuntimeDispatch -> load_reduce_types
     return PreRuntimeDispatch::load<decorators, T>(addr);
   }
 
@@ -1195,10 +1198,10 @@ namespace AccessInternal {
                                               INTERNAL_CONVERT_COMPRESSED_OOP : DECORATORS_NONE)>::value;
     PreRuntimeDispatch::store_at<expanded_decorators>(base, offset, decayed_value);
   }
-
+//!xiaojin volatile -3 AccessInternal -> load ----- 传入的decorators == MO_SEQ_CST  调用是：return AccessInternal::load<decorators, P, P>(addr);
   template <DecoratorSet decorators, typename P, typename T>
   inline T load(P* addr) {
-    verify_types<decorators, T>();
+    verify_types<decorators, T>();//!is_pointer
     typedef typename Decay<P>::type DecayedP;
     typedef typename Conditional<HasDecorator<decorators, INTERNAL_VALUE_IS_OOP>::value,
                                  typename OopOrNarrowOop<T>::type,
@@ -1208,6 +1211,7 @@ namespace AccessInternal {
     const DecoratorSet expanded_decorators = DecoratorFixup<
       (IsVolatile<P>::value && !HasDecorator<decorators, MO_DECORATOR_MASK>::value) ?
       (MO_VOLATILE | decorators) : decorators>::value;
+      //!
     return load_reduce_types<expanded_decorators, DecayedT>(const_cast<DecayedP*>(addr));
   }
 

@@ -30,6 +30,7 @@
 #include "metaprogramming/integralConstant.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+//!xiaojin decorator是什么东西？
 // A decorator is an attribute or property that affects the way a memory access is performed in some way.
 // There are different groups of decorators. Some have to do with memory ordering, others to do with,
 // e.g. strength of references, strength of GC barriers, or whether compression should be applied or not.
@@ -114,6 +115,7 @@ const DecoratorSet INTERNAL_DECORATOR_MASK           = INTERNAL_CONVERT_COMPRESS
 //    - An acquiring load will make subsequent memory accesses observe the memory accesses
 //      preceding the releasing store that the acquiring load observed.
 //    - Guarantees from relaxed loads hold.
+//!xiaojin volatile -0 MO_SEQ_CST decorator含义：保证顺序load。就是保证多核下内存访问的一致性，类似MESI。
 //  * MO_SEQ_CST: Sequentially consistent loads.
 //    - These loads observe MO_SEQ_CST stores in the same order on other processors
 //    - Preceding loads and stores in program order are not reordered with subsequent loads and stores in program order.
