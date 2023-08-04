@@ -62,7 +62,7 @@
 //
 // == IMPLEMENTATION ==
 // Each access goes through the following steps in a template pipeline.
-//! There are essentially 5 steps for each access:
+//! xiaojin volatile -2.1 重要的规范 There are essentially 5 steps for each access:
 // * Step 1:   Set default decorators and decay types. This step gets rid of CV qualifiers
 //             and sets default decorators to sensible values.
 // * Step 2:   Reduce types. This step makes sure there is only a single T type and not
@@ -218,7 +218,7 @@ public:
   template <typename P>
   static inline P load(P* addr) {
     verify_primitive_decorators<load_mo_decorators>();
-    return AccessInternal::load<decorators, P, P>(addr);
+    return AccessInternal::load<decorators, P, P>(addr);//!decorators = MO_SEQ_CST
   }
 
   template <typename P, typename T>

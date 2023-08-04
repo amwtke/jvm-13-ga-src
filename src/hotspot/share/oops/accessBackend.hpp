@@ -341,7 +341,7 @@ public:
   static inline void store(void* addr, T value) {
     store_internal<decorators>(addr, value);
   }
-//!xiaojin volatile -6 RawAccessBarrier -> load
+//!xiaojin volatile -6.0 RawAccessBarrier -> load
   template <typename T>
   static inline T load(void* addr) {
     return load_internal<decorators, T>(addr);
@@ -1110,7 +1110,7 @@ namespace AccessInternal {
   template <DecoratorSet decorators, typename T>
   inline T load_reduce_types(T* addr) {
     //!xiaojin volatile -4 AccessInternal::PreRuntimeDispatch -> load_reduce_types
-    return PreRuntimeDispatch::load<decorators, T>(addr);
+    return PreRuntimeDispatch::load<decorators, T>(addr);//!decorators = MO_SEQ_CST
   }
 
   template <DecoratorSet decorators, typename T>

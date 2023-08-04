@@ -238,7 +238,7 @@ public:
   T get_volatile() {
     if (_obj == NULL) {
       GuardUnsafeAccess guard(_thread);
-      volatile T ret = RawAccess<MO_SEQ_CST>::load(addr());//!主要调用Access中的load
+      volatile T ret = RawAccess<MO_SEQ_CST>::load(addr());//!主要调用Access中的load. MO_SEQ_CST这个参数是重点。
       return normalize_for_read(ret);
     } else {
       T ret = HeapAccess<MO_SEQ_CST>::load_at(_obj, _offset);
@@ -315,7 +315,7 @@ DEFINE_GETSETOOP(jdouble, Double);
 
 #undef DEFINE_GETSETOOP
 
-//!xiaojin volatile DEFINE_GETSETOOP_VOLATILE Unsafe_Get##Type##Volatile
+//!xiaojin volatile -0.1 DEFINE_GETSETOOP_VOLATILE Unsafe_Get##Type##Volatile. volatile字节码调用的函数。
 #define DEFINE_GETSETOOP_VOLATILE(java_type, Type) \
  \
 UNSAFE_ENTRY(java_type, Unsafe_Get##Type##Volatile(JNIEnv *env, jobject unsafe, jobject obj, jlong offset)) { \

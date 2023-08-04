@@ -332,7 +332,7 @@ inline void OrderAccess::ordered_store(volatile FieldType* p, FieldType v) {
 
 template <typename FieldType, ScopedFenceType FenceType>
 inline FieldType OrderAccess::ordered_load(const volatile FieldType* p) {
-  //!xiaojin volatile -6.6 跟平台相关的代码在这里：ScopedFence FenceType = X_ACQUIRE
+  //!xiaojin volatile -6.6 跟平台相关的代码在这里：ScopedFence FenceType = X_ACQUIRE。这里就是创建了一个ScopedFence<FenceType>类型的f，并调用了构造函数。
   ScopedFence<FenceType> f((void*)p);
   return Atomic::load(p);//!除了检测类型 没做啥
 }
