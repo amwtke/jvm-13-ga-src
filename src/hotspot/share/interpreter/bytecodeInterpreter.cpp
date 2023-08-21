@@ -1879,7 +1879,7 @@ run:
           UPDATE_PC_AND_RETURN(0); // Re-execute
         }
       }
-
+//!xiaojin monitorexit 退出synchronize的代码.notifyAll最后唤醒线程实在这里。参考：https://app.yinxiang.com/shard/s65/nl/15273355/2f9bf57c-d197-47a9-81aa-f740904b9182
       CASE(_monitorexit): {
         oop lockee = STACK_OBJECT(-1);
         CHECK_NULL(lockee);
