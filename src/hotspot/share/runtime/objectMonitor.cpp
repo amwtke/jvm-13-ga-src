@@ -655,7 +655,7 @@ void ObjectMonitor::EnterI(TRAPS) {
 // monitor reentry in wait().
 //
 // In the future we should reconcile EnterI() and ReenterI().
-
+//!xiaojin ObjectMonitor::ReenterI 重新获得锁。
 void ObjectMonitor::ReenterI(Thread * Self, ObjectWaiter * SelfNode) {
   assert(Self != NULL, "invariant");
   assert(SelfNode != NULL, "invariant");
@@ -671,8 +671,8 @@ void ObjectMonitor::ReenterI(Thread * Self, ObjectWaiter * SelfNode) {
     guarantee(v == ObjectWaiter::TS_ENTER || v == ObjectWaiter::TS_CXQ, "invariant");
     assert(_owner != Self, "invariant");
 
-    if (TryLock(Self) > 0) break;
-    if (TrySpin(Self) > 0) break;
+    if (TryLock(Self) > 0) break;//!成功获取锁就break
+    if (TrySpin(Self) > 0) break;//!成功获取锁就break
 
     // State transition wrappers around park() ...
     // ReenterI() wisely defers state transitions until
@@ -730,7 +730,7 @@ void ObjectMonitor::ReenterI(Thread * Self, ObjectWaiter * SelfNode) {
 
   assert(_owner == Self, "invariant");
   assert(((oop)(object()))->mark() == markOopDesc::encode(this), "invariant");
-  UnlinkAfterAcquire(Self, SelfNode);
+  UnlinkAfterAcquire(Self, SelfNode);//!这里就真正从_EntryList删除了。notify后，exit中调用的ExitEpilog只是唤醒，没有删除当前节点。
   if (_succ == Self) _succ = NULL;
   assert(_succ != Self, "invariant");
   SelfNode->TState = ObjectWaiter::TS_RUN;
@@ -860,6 +860,12 @@ void ObjectMonitor::UnlinkAfterAcquire(Thread *Self, ObjectWaiter *SelfNode) {
 // structured the code so the windows are short and the frequency
 // of such futile wakups is low.
 
+//!xiaojin ObjectMonitor::exit 在synchronize关键字退出的时候会调用这个代码。https://www.cnblogs.com/zytcomeon/p/14866326.html
+//!notify的唤醒在这里进行。
+/*
+https://juejin.cn/post/6844904094662918157
+!或许大家立马想到这个简单，一个for循环就搞定了，不过在jvm里没实现这么简单，而是借助了monitorexit，上面我提到了当某个线程从wait状态恢复出来的时候，要先获取锁，然后再退出同步块，所以notifyAll的实现是调用notify的线程在退出其同步块的时候唤醒起最后一个进入wait状态的线程，然后这个线程退出同步块的时候继续唤醒其倒数第二个进入wait状态的线程，依次类推，同样这这是一个策略的问题，jvm里提供了挨个直接唤醒线程的参数，不过都很罕见就不提了。
+*/
 void ObjectMonitor::exit(bool not_suspended, TRAPS) {
   Thread * const Self = THREAD;
   if (THREAD != _owner) {
@@ -912,6 +918,7 @@ void ObjectMonitor::exit(bool not_suspended, TRAPS) {
     // But of course in TSO #loadstore|#storestore is not required.
     OrderAccess::release_store(&_owner, (void*)NULL);   // drop the lock
     OrderAccess::storeload();                        // See if we need to wake a successor
+    //!如果_EntryList与_cxq都是空，就说明没有等待要唤醒的线程，也就是说没有调用notify或者notifyAll，所以不用唤醒。直接退出。
     if ((intptr_t(_EntryList)|intptr_t(_cxq)) == 0 || _succ != NULL) {
       return;
     }
@@ -1190,6 +1197,7 @@ static void post_monitor_wait_event(EventJavaMonitorWait* event,
 //
 // Note: a subset of changes to ObjectMonitor::wait()
 // will need to be replicated in complete_exit
+//!xiaojin ObjectMonitor::wait
 void ObjectMonitor::wait(jlong millis, bool interruptible, TRAPS) {
   Thread * const Self = THREAD;
   assert(Self->is_Java_thread(), "Must be Java thread!");
@@ -1232,7 +1240,7 @@ void ObjectMonitor::wait(jlong millis, bool interruptible, TRAPS) {
   // create a node to be put into the queue
   // Critically, after we reset() the event but prior to park(), we must check
   // for a pending interrupt.
-  ObjectWaiter node(Self);
+  ObjectWaiter node(Self);//!被唤醒或者被休眠的线程的node
   node.TState = ObjectWaiter::TS_WAIT;
   Self->_ParkEvent->reset();
   OrderAccess::fence();          // ST into Event; membar ; LD interrupted-flag
@@ -1369,7 +1377,7 @@ void ObjectMonitor::wait(jlong millis, bool interruptible, TRAPS) {
     ObjectWaiter::TStates v = node.TState;
     if (v == ObjectWaiter::TS_RUN) {
       enter(Self);
-    } else {
+    } else {//!被notify以后再这里重新获得锁
       guarantee(v == ObjectWaiter::TS_ENTER || v == ObjectWaiter::TS_CXQ, "invariant");
       ReenterI(Self, &node);
       node.wait_reenter_end(this);
@@ -1425,7 +1433,7 @@ void ObjectMonitor::INotify(Thread * Self) {
     //     or head (policy == 0).
     // b.  push it onto the front of the _cxq (policy == 2).
     // For now we use (b).
-
+//!将要唤醒线程的状态设置成TS_ENTER，这在唤醒后，在wait调用中比较管用。注：休眠的线程都是从wait进来的，必定也从wait出去。
     iterator->TState = ObjectWaiter::TS_ENTER;
 
     iterator->_notified = 1;
@@ -1493,7 +1501,7 @@ void ObjectMonitor::notify(TRAPS) {
 // that in prepend-mode we invert the order of the waiters. Let's say that the
 // waitset is "ABCD" and the EntryList is "XYZ". After a notifyAll() in prepend
 // mode the waitset will be empty and the EntryList will be "DCBAXYZ".
-
+//!xiaojin notifyAll
 void ObjectMonitor::notifyAll(TRAPS) {
   CHECK_OWNER();
   if (_WaitSet == NULL) {
