@@ -864,7 +864,7 @@ void ObjectMonitor::UnlinkAfterAcquire(Thread *Self, ObjectWaiter *SelfNode) {
 //!notify的唤醒在这里进行。
 /*
 https://juejin.cn/post/6844904094662918157
-!或许大家立马想到这个简单，一个for循环就搞定了，不过在jvm里没实现这么简单，而是借助了monitorexit，上面我提到了当某个线程从wait状态恢复出来的时候，要先获取锁，然后再退出同步块，所以notifyAll的实现是调用notify的线程在退出其同步块的时候唤醒起最后一个进入wait状态的线程，然后这个线程退出同步块的时候继续唤醒其倒数第二个进入wait状态的线程，依次类推，同样这这是一个策略的问题，jvm里提供了挨个直接唤醒线程的参数，不过都很罕见就不提了。
+!xiaojin exit (exp)notifyAll怎么挨个唤醒的？或许大家立马想到这个简单，一个for循环就搞定了，不过在jvm里没实现这么简单，而是借助了monitorexit，上面我提到了当某个线程从wait状态恢复出来的时候，要先获取锁，然后再退出同步块，所以notifyAll的实现是调用notify的线程在退出其同步块的时候唤醒起最后一个进入wait状态的线程，然后这个线程退出同步块的时候继续唤醒其倒数第二个进入wait状态的线程，依次类推，同样这这是一个策略的问题，jvm里提供了挨个直接唤醒线程的参数，不过都很罕见就不提了。
 */
 void ObjectMonitor::exit(bool not_suspended, TRAPS) {
   Thread * const Self = THREAD;
