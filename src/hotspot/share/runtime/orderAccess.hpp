@@ -341,6 +341,7 @@ inline FieldType OrderAccess::ordered_load(const volatile FieldType* p) {
     scopedFence.prefix();
     Atomic::load(p);
     ScopedFenceGeneral<X_ACQUIRE>::postfix()       { OrderAccess::acquire(); }
+    !在volatile load前什么都没加，load后，加入了禁止编译器重拍指令，所以，对于x64平台load是不用担心的！
   */
 }
 
