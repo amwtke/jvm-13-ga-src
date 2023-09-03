@@ -159,6 +159,7 @@ template <DecoratorSet ds, typename T>
 inline typename EnableIf<
   HasDecorator<ds, MO_SEQ_CST>::value>::type
 RawAccessBarrier<decorators>::store_internal(void* addr, T value) {
+  //!xiaojin volatile-put release_store_fence
   OrderAccess::release_store_fence(reinterpret_cast<volatile T*>(addr), value);
 }
 

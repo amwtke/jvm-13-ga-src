@@ -303,6 +303,7 @@ template<size_t byte_size, ScopedFenceType type>
 struct OrderAccess::PlatformOrderedStore {
   template <typename T>
   void operator()(T v, volatile T* p) const {
+    //!xiaojin volatile-put ordered_store RELEASE_X_FENCE
     ordered_store<T, type>(p, v);
   }
 };
@@ -326,6 +327,10 @@ template<> inline void ScopedFenceGeneral<RELEASE_X_FENCE>::postfix() { OrderAcc
 
 template <typename FieldType, ScopedFenceType FenceType>
 inline void OrderAccess::ordered_store(volatile FieldType* p, FieldType v) {
+  //!xiaojin volatile-put (exp put_volatile原理来了)跟load是类似的流程 RELEASE_X_FENCE。前后都会调用：prefix 与 postfix 代码就在上面。而且注意到x64平台会有store-load重排所以，postfix会有个fence，而这个fence是个lock全屏障，据说是因为效率高。所以在每个volatile store后面都会插入lock以保证store-buffer被清空完毕。
+  //!参考：https://app.yinxiang.com/shard/s65/nl/15273355/2160d7c6-9060-4d7a-bba8-295aa6d607d1/
+  //https://app.yinxiang.com/shard/s65/nl/15273355/f69767fa-78fb-4ed3-93a7-6762fdf786da/
+  //https://app.yinxiang.com/shard/s65/nl/15273355/92b7199e-fe76-4aa6-9d93-37c47b8b1542/
   ScopedFence<FenceType> f((void*)p);
   Atomic::store(v, p);
 }
@@ -367,6 +372,7 @@ inline void OrderAccess::release_store(volatile D* p, T v) {
 
 template <typename T, typename D>
 inline void OrderAccess::release_store_fence(volatile D* p, T v) {
+  //!xiaojin volatile-put PlatformOrderedStore
   StoreImpl<T, D, PlatformOrderedStore<sizeof(D), RELEASE_X_FENCE> >()(v, p);
 }
 #endif // SHARE_RUNTIME_ORDERACCESS_HPP
