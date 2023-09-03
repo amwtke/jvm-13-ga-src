@@ -332,12 +332,27 @@ inline void OrderAccess::ordered_store(volatile FieldType* p, FieldType v) {
 
 template <typename FieldType, ScopedFenceType FenceType>
 inline FieldType OrderAccess::ordered_load(const volatile FieldType* p) {
-  //!xiaojin volatile -6.6 跟平台相关的代码在这里：ScopedFence FenceType = X_ACQUIRE。这里就是创建了一个ScopedFence<FenceType>类型的f，并调用了构造函数。
-  ScopedFence<FenceType> f((void*)p);
+  //!xiaojin volatile -6.6 (impo 实现volatile的关键代码)跟平台相关的代码在这里：ScopedFence FenceType = X_ACQUIRE。这里就是创建了一个ScopedFence<FenceType>类型的f，并调用了构造函数。
+  ScopedFence<FenceType> f((void*)p);//!先调用构造函数的prefiex，为空！因为没有跟X_ACQUIRE对应的template函数；
   return Atomic::load(p);//!除了检测类型 没做啥
+  //!在这里因为f是局部变量，又是对象，所以在这里退出函数范围的时候会析构，析构的时候，会调用f的析构函数-》ScopedFenceGeneral<X_ACQUIRE>::postfix()       { OrderAccess::acquire(); }
+  /*
+    所以这个函数最终的调用是：
+    scopedFence.prefix();
+    Atomic::load(p);
+    ScopedFenceGeneral<X_ACQUIRE>::postfix()       { OrderAccess::acquire(); }
+  */
 }
 
-//!xiaojin volatile -6.3 OrderAccess::load_acquire 已经进入了jvm JMM的模型了。
+//!xiaojin volatile -6.3 (exp不多说看文档) OrderAccess::load_acquire 已经进入了jvm JMM的模型了。参考：
+// https://app.yinxiang.com/shard/s65/nl/15273355/92b7199e-fe76-4aa6-9d93-37c47b8b1542/
+// https://app.yinxiang.com/shard/s65/nl/15273355/f69767fa-78fb-4ed3-93a7-6762fdf786da/
+/*
+在每个volatile写前面加入一个StoreStore
+在每个volatile写后面加入一个StoreLoad
+在每个volatile读后面加入一个LoadLoad
+在每个volatile读后面加入一个LoadStore
+*/
 template <typename T>
 inline T OrderAccess::load_acquire(const volatile T* p) {
   //!xiaojin volatile -6.4 实际调用点是在 PlatformOrderedLoad<sizeof(T), X_ACQUIRE> >() 而且要注意 X_ACQUIRE这个标志
