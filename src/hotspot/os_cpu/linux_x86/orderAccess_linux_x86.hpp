@@ -34,6 +34,8 @@
 
 // A compiler barrier, forcing the C++ compiler to invalidate all memory assumptions
 static inline void compiler_barrier() {
+  //!x64底下的一个空指令，但是前面加了volatile，可以认为是防止编译器重排指令的汇编。
+  //!参考：https://app.yinxiang.com/shard/s65/nl/15273355/5eb1191e-1a4a-448b-b9de-9006942e99eb/
   __asm__ volatile ("" : : : "memory");
 }
 
