@@ -38,10 +38,15 @@ static inline void compiler_barrier() {
   //!参考：https://app.yinxiang.com/shard/s65/nl/15273355/5eb1191e-1a4a-448b-b9de-9006942e99eb/
   __asm__ volatile ("" : : : "memory");
 }
+//!xiaojin volatile fences => loadload storestore loadstore storeload
 
+//loadload 相当于刷新invalidation queue
 inline void OrderAccess::loadload()   { compiler_barrier(); }
+//刷新store-buffer
 inline void OrderAccess::storestore() { compiler_barrier(); }
+//刷新invalidation queue
 inline void OrderAccess::loadstore()  { compiler_barrier(); }
+//刷新store-buffer.x64平台可能出现这种重排，所以加入实在的fence。
 inline void OrderAccess::storeload()  { fence();            }
 
 //!xiaojin volatile -7.1 x86 就只需要一个编译器的优化禁用就行了。

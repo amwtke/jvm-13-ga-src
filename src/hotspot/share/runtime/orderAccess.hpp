@@ -240,6 +240,7 @@ enum ScopedFenceType {
 template <ScopedFenceType T>
 class ScopedFenceGeneral: public StackObj {
  public:
+ //!prefix与postfix如果没有template重载就是空函数，什么也不做。
   void prefix() {}
   void postfix() {}
 };
@@ -331,13 +332,17 @@ inline void OrderAccess::ordered_store(volatile FieldType* p, FieldType v) {
   //!参考：https://app.yinxiang.com/shard/s65/nl/15273355/2160d7c6-9060-4d7a-bba8-295aa6d607d1/
   //https://app.yinxiang.com/shard/s65/nl/15273355/f69767fa-78fb-4ed3-93a7-6762fdf786da/
   //https://app.yinxiang.com/shard/s65/nl/15273355/92b7199e-fe76-4aa6-9d93-37c47b8b1542/
+
+  //!这里是个局部对象，对于C++中，局部对象会先运行构造函数初始化，然后在执行完Atomic::store语句后，会退出这个scope，又会调用析构函数。所以这里相当于初始化了一个ScopedFence类型的f的局部变量，会先执行ScopedFence的构造函数，然后退出前执行析构函数。
+
+  //!而ScopedFence的构造函数实际是运行prefix()是个空函数，析构函数实际运行postfix() —— x64下相当于调用了OrderAccess::acquire()刷新了store-buffer，防止重排序，激活MESI协议，保证store的原子性。所以整体过程相当于在Atomic::store前后加入了pre于post的钩子。用于不同的CPU平台加入屏障指令，保证load与store的原子性。
   ScopedFence<FenceType> f((void*)p);
   Atomic::store(v, p);
 }
 
 template <typename FieldType, ScopedFenceType FenceType>
 inline FieldType OrderAccess::ordered_load(const volatile FieldType* p) {
-  //!xiaojin volatile -6.6 (impo 实现volatile的关键代码)跟平台相关的代码在这里：ScopedFence FenceType = X_ACQUIRE。这里就是创建了一个ScopedFence<FenceType>类型的f，并调用了构造函数。
+  //!xiaojin volatile -6.6 (impo exp实现volatile的关键代码)跟平台相关的代码在这里：ScopedFence FenceType = X_ACQUIRE。这里就是创建了一个ScopedFence<FenceType>类型的f，并调用了构造函数。
   ScopedFence<FenceType> f((void*)p);//!先调用构造函数的prefiex，为空！因为没有跟X_ACQUIRE对应的template函数；
   return Atomic::load(p);//!除了检测类型 没做啥
   //!在这里因为f是局部变量，又是对象，所以在这里退出函数范围的时候会析构，析构的时候，会调用f的析构函数-》ScopedFenceGeneral<X_ACQUIRE>::postfix()       { OrderAccess::acquire(); }
@@ -346,7 +351,7 @@ inline FieldType OrderAccess::ordered_load(const volatile FieldType* p) {
     scopedFence.prefix();
     Atomic::load(p);
     ScopedFenceGeneral<X_ACQUIRE>::postfix()       { OrderAccess::acquire(); }
-    !在volatile load前什么都没加，load后，加入了禁止编译器重拍指令，所以，对于x64平台load是不用担心的！
+    !在volatile load前什么都没加，load后，只加入了禁止编译器重拍指令。因为，1、对于core本地变量的load，会先读store-buffer，所以不会乱序；2、如果读取其他core的变量，则jvm强制其他volatile变量写入之后插入OrderAccess::acquire()->fence()，保证刷新store-buffer，激活MESI协议去同步CL，所以也是原子的。所以volatile-get只要加入防止编译器重排指令即可。
   */
 }
 
@@ -354,10 +359,7 @@ inline FieldType OrderAccess::ordered_load(const volatile FieldType* p) {
 // https://app.yinxiang.com/shard/s65/nl/15273355/92b7199e-fe76-4aa6-9d93-37c47b8b1542/
 // https://app.yinxiang.com/shard/s65/nl/15273355/f69767fa-78fb-4ed3-93a7-6762fdf786da/
 /*
-在每个volatile写前面加入一个StoreStore
-在每个volatile写后面加入一个StoreLoad
-在每个volatile读后面加入一个LoadLoad
-在每个volatile读后面加入一个LoadStore
+搜索：xiao【jin volatile fences
 */
 template <typename T>
 inline T OrderAccess::load_acquire(const volatile T* p) {
@@ -367,12 +369,13 @@ inline T OrderAccess::load_acquire(const volatile T* p) {
 
 template <typename T, typename D>
 inline void OrderAccess::release_store(volatile D* p, T v) {
+  //实际调用PlatformOrderedStore<sizeof(D), RELEASE_X>
   StoreImpl<T, D, PlatformOrderedStore<sizeof(D), RELEASE_X> >()(v, p);
 }
 
 template <typename T, typename D>
 inline void OrderAccess::release_store_fence(volatile D* p, T v) {
-  //!xiaojin volatile-put PlatformOrderedStore
+  //!xiaojin volatile-put PlatformOrderedStore 实际调用了 PlatformOrderedStore<sizeof(D), RELEASE_X_FENCE> >()(v, p)
   StoreImpl<T, D, PlatformOrderedStore<sizeof(D), RELEASE_X_FENCE> >()(v, p);
 }
 #endif // SHARE_RUNTIME_ORDERACCESS_HPP
