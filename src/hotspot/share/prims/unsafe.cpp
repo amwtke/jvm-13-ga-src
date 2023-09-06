@@ -314,7 +314,36 @@ DEFINE_GETSETOOP(jfloat, Float);
 DEFINE_GETSETOOP(jdouble, Double);
 
 #undef DEFINE_GETSETOOP
-
+//!xiaojin volatile (!exp JVM的volatile是什么意思？)
+/*
+1、编译器不优化，不去改变程序原本的意思；
+2、实现变量原子的load与store，特别在多核处理器下。可以看到AQS的state是volatile的，它的store与load都不用加锁。
+看一个例子：
+AQS->ReentrantLock->lock()
+?这个函数是可以多线程访问的，而且并发量可能会比较大
+protected final boolean tryAcquire(int acquires) {
+            final Thread current = Thread.currentThread();
+!           int c = getState();
+            if (c == 0) {
+                if (!hasQueuedPredecessors() &&
+!                   compareAndSetState(0, acquires)) {
+                    setExclusiveOwnerThread(current);
+                    return true;
+                }
+            }
+            ....
+  }
+可以看到getState()
+   protected final int getState() {
+        return state;
+    }
+是没有加锁的，所以，如果有其他线程先通过原子指令获得了锁，也就是使得getState>0；是可以马上被其他核心的线程获取的。
+原因就是volatile关键字修饰了state变量；使得state每次都能原子的获得最新的处理器值（
+!意思是：如果其他线程正在修改这个变量，那么就不能结束读取，要等其他线程写完才能load）。
+X64框架下，这个过程是通过这样的方法获得这个效果的：
+1、编译的时候，不能将state变量看做一般的普通变量，在本地程序没有修改，就优化掉load state的指令；
+2、在运行时，在对state修改以后，要在store state之后加入一个storeload的屏障指令；因为x64平台loadload与storestore是不会乱序的。所以，保证其他CPU核心能够获取最新的值；这个效果是通过lockprefix实现，效果就是刷新store-buffer到CL，然后靠MESI协议——作用在CL上，保证变量读取的原子性。
+*/ 
 //!xiaojin volatile -0.1 DEFINE_GETSETOOP_VOLATILE Unsafe_Get##Type##Volatile. volatile字节码调用的函数。
 #define DEFINE_GETSETOOP_VOLATILE(java_type, Type) \
  \
