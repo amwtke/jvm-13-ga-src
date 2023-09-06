@@ -340,6 +340,25 @@ protected final boolean tryAcquire(int acquires) {
 是没有加锁的，所以，如果有其他线程先通过原子指令获得了锁，也就是使得getState>0；是可以马上被其他核心的线程获取的。
 原因就是volatile关键字修饰了state变量；使得state每次都能原子的获得最新的处理器值（
 !意思是：如果其他线程正在修改这个变量，那么就不能结束读取，要等其他线程写完才能load）。
+
+再看一个例子：
+```java
+
+A a = null;
+
+if(a==null){
+   lock{
+     if(a == null){
+       a = new A();
+     }
+   }
+}
+
+```
+单例双检锁，以前一个通行的初始化变量的代码，但是上面的例子有个bug，就是`A a = null`必须是volatile的，否则不对，为什么呢？
+原因是：编译器优化。
+如果不写成`volatile A a`则编译器会认为，a这个变量在整个程序都没有被赋值，直到进入双检锁。所以，会把前面的lock优化掉，直接编译成`A a = new A();`这显然不对。所以volatile此处的作用就是提示编译器，这里a的初始化可能被别的线程初始化完了，所以用volatile关键字提示编译器，不要优化代码生成。
+
 X64框架下，这个过程是通过这样的方法获得这个效果的：
 1、编译的时候，不能将state变量看做一般的普通变量，在本地程序没有修改，就优化掉load state的指令；
 2、在运行时，在对state修改以后，要在store state之后加入一个storeload的屏障指令；因为x64平台loadload与storestore是不会乱序的。所以，保证其他CPU核心能够获取最新的值；这个效果是通过lockprefix实现，效果就是刷新store-buffer到CL，然后靠MESI协议——作用在CL上，保证变量读取的原子性。
