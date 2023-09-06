@@ -40,6 +40,14 @@ static inline void compiler_barrier() {
 }
 //!xiaojin volatile fences => loadload storestore loadstore storeload
 
+//!xiaojin volatile （exp 几种屏障类型——X86-TSO的内存一致性模型）
+/*
+参考：https://app.yinxiang.com/shard/s65/nl/15273355/f69767fa-78fb-4ed3-93a7-6762fdf786da/
+在CPU级别，有寄存器，对于短时间频繁使用的变量，编译器可以选择将其值缓存在寄存器级别，在这期间，其他CPU看不到该变量内容的改变
+在CPU和高速缓存之间有一个写缓冲区StoreBuffer，CPU会将写操作推入写缓冲区，在之后的某个时间点按照FIFO写入内存，在这期间，其他CPU看不到该变量内容的改变。注意，存在写缓冲区并且以FIFO进行工作，就是TSO-完全存储定序内存模型的工作方式。
+Cache，高速缓存，可以有多级，但是因为MESI缓存一致性协议可以保证各个处理器之间缓存一致，所以在这个层次上不会有各处理器数据不一致的情况
+内存，各处理器共享，不会有数据不一致的情况
+*/
 //loadload 相当于刷新invalidation queue
 inline void OrderAccess::loadload()   { compiler_barrier(); }
 //刷新store-buffer
