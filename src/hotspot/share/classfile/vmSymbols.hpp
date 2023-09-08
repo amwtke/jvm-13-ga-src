@@ -667,7 +667,7 @@
   template(url_void_signature,                     "(Ljava/net/URL;)V")                                           \
                                                                                                                   \
   /*end*/
-
+//!xiaojin-intrinsics -0 所有intrinsics的定义处
 // Here are all the intrinsics known to the runtime and the CI.
 // Each intrinsic consists of a public enum name (like _hashCode),
 // followed by a specification of its klass, name, and signature:
@@ -703,6 +703,7 @@
 // for Emacs: (let ((c-backslash-column 120) (c-backslash-max-column 120)) (c-backslash-region (point) (point-max) nil t))
 //
 //
+//! xiaojin-intrinsics -0.2 分类
 // There are two types of intrinsic methods: (1) Library intrinsics and (2) bytecode intrinsics.
 //
 // (1) A library intrinsic method may be replaced with hand-crafted assembly code,
@@ -719,6 +720,7 @@
 // in the (Java) source code and the semantics of the method as defined
 // by the code in the VM, intrinsic methods must be explicitly marked.
 //
+//!xiaojin-intrinsics -0.1 标签HotSpotIntrinsicCandidate说明函数是intrinsics的。
 // Intrinsic methods are marked by the jdk.internal.HotSpotIntrinsicCandidate
 // annotation. If CheckIntrinsics is enabled, the VM performs the following
 // checks when a class C is loaded: (1) all intrinsics defined by the VM for
@@ -739,6 +741,8 @@
 // annotate the method in the source code. The list below contains all
 // library intrinsics followed by bytecode intrinsics. Please also make sure to
 // add the declaration of the intrinsic to the approriate section of the list.
+
+//!xiaojin-intrinsics -1.2 VM_INTRINSICS_DO定义
 #define VM_INTRINSICS_DO(do_intrinsic, do_class, do_name, do_signature, do_alias)                                       \
   /* (1) Library intrinsics                                                                        */                   \
   do_intrinsic(_hashCode,                 java_lang_Object,       hashCode_name, void_int_signature,             F_R)   \
@@ -1569,6 +1573,7 @@ class vmIntrinsics: AllStatic {
     _none = 0,                      // not an intrinsic (default answer)
 
     #define VM_INTRINSIC_ENUM(id, klass, name, sig, flags)  id,
+    //!xiaojin-intrinsics -1.1 初始化所有的intrinsics的enum 只是有 _getReferenceOpaque 这些项（注意：Varhandle.getOpaque()有PolymorphicSignature标签，表示对于所有caller的类型都会有一个_getXXXOpaque的函数调用），doname，do_class都是空。相当于生成一个枚举列表，列举了jvm种所有的intrinsics的方法符号。
     VM_INTRINSICS_DO(VM_INTRINSIC_ENUM,
                      VM_SYMBOL_IGNORE, VM_SYMBOL_IGNORE, VM_SYMBOL_IGNORE, VM_ALIAS_IGNORE)
     #undef VM_INTRINSIC_ENUM

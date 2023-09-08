@@ -1590,6 +1590,7 @@ Node* GraphKit::access_load_at(Node* obj,   // containing obj
   }
 
   C2AccessValuePtr addr(adr, adr_type);
+  //!xiaojin-intrinsics -2.4 decorators加入C2_READ_ACCESS 
   C2ParseAccess access(this, decorators | C2_READ_ACCESS, bt, obj, addr);
   if (access.is_raw()) {
     return _barrier_set->BarrierSetC2::load_at(access, val_type);

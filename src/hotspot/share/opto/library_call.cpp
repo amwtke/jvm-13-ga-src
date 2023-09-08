@@ -508,7 +508,7 @@ Node* LibraryIntrinsic::generate_predicate(JVMState* jvms, int predicate) {
   C->gather_intrinsic_statistics(intrinsic_id(), is_virtual(), Compile::_intrinsic_failed);
   return NULL;
 }
-
+//!xiaojin-intrinsics -1 （exp impo 具体intrinsics调用例程？）intrinsics的解释器 比如getOpaque.就是下面这些函数在jvm调用的时候，会被替换成不同平台（CPU与OS）的特殊实现。函数的定义在一个宏里面——VM_INTRINSICS_DO
 bool LibraryCallKit::try_to_inline(int predicate) {
   // Handle symbolic names for otherwise undistinguished boolean switches:
   const bool is_store       = true;
@@ -2359,7 +2359,7 @@ DecoratorSet LibraryCallKit::mo_decorator_for_access_kind(AccessKind kind) {
         return 0;
   }
 }
-
+//!xiaojin-intrinsics -2 最终调用处 LibraryCallKit::inline_unsafe_access
 bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, const AccessKind kind, const bool unaligned) {
   if (callee()->is_static())  return false;  // caller must have the capability!
   DecoratorSet decorators = C2_UNSAFE_ACCESS;
@@ -2422,6 +2422,7 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
          "fieldOffset must be byte-scaled");
   // 32-bit machines ignore the high half!
   offset = ConvL2X(offset);
+  //!xiaojin-intrinsics -2.1 拿到目标地址。
   adr = make_unsafe_address(base, offset, is_store ? ACCESS_WRITE : ACCESS_READ, type, kind == Relaxed);
 
   if (_gvn.type(base)->isa_ptr() != TypePtr::NULL_PTR) {
@@ -2485,6 +2486,7 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
   const Type *value_type = Type::get_const_basic_type(type);
 
   // Figure out the memory ordering.
+  //!xiaojin-intrinsics -2.2 检查memory ordering的类型：如果是opague就是 MO_RELAXED ！
   decorators |= mo_decorator_for_access_kind(kind);
 
   if (!is_store && type == T_OBJECT) {
@@ -2502,7 +2504,7 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
   // as a courtesy.  However, this is not guaranteed by Unsafe,
   // and it is not possible to fully distinguish unintended nulls
   // from intended ones in this API.
-
+//!如果是get的话
   if (!is_store) {
     Node* p = NULL;
     // Try to constant fold a load from a constant field
@@ -2513,6 +2515,7 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
     }
 
     if (p == NULL) { // Could not constant fold the load
+//!xiaojin-intrinsics -2.3 来到这里 获取result node。decorators带上了 MO_RELAXED
       p = access_load_at(heap_base_oop, adr, adr_type, value_type, type, decorators);
       // Normalize the value returned by getBoolean in the following cases
       if (type == T_BOOLEAN &&
@@ -2544,8 +2547,9 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
     // following nodes will have the control of the MemBarCPUOrder inserted at
     // the end of this method.  So, pushing the load onto the stack at a later
     // point is fine.
+    //!xiaojin-intrinsics -2.> set_result node
     set_result(p);
-  } else {
+  } else {//!下面是store的流程
     if (bt == T_ADDRESS) {
       // Repackage the long as a pointer.
       val = ConvL2X(val);

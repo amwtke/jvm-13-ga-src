@@ -316,6 +316,14 @@ DEFINE_GETSETOOP(jdouble, Double);
 #undef DEFINE_GETSETOOP
 //!xiaojin volatile (!exp JVM的volatile是什么意思？)
 /*
+  !JVM 参考：
+  1、https://app.yinxiang.com/shard/s65/nl/15273355/20e2cbd6-b33f-4f34-a85e-8b62c84df419
+  2、https://app.yinxiang.com/shard/s65/nl/15273355/e357eb4e-e992-4de3-8c13-d1974b7579d8/
+
+!  JVM在内存模型上越来越跟C++靠近了，试图兼容更细粒度的兼容各种可能的CPU，因此发布了新的更精细控制mem_ordering的类`VarHandle`类。
+见`xiaojin-intrinsics volatile解释处`
+*/
+/*
 1、编译器不优化，不去改变程序原本的意思；
 2、实现变量原子的load与store，特别在多核处理器下。可以看到AQS的state是volatile的，它的store与load都不用加锁。
 看一个例子：

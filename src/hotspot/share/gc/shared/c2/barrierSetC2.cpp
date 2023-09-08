@@ -173,6 +173,7 @@ class C2AccessFence: public StackObj {
   Node* _leading_membar;
 
 public:
+//!xiaojin-intrinsics -2.5.1 C2AccessFence构造函数，可以看做是前置
   C2AccessFence(C2Access& access) :
     _access(access), _leading_membar(NULL) {
     GraphKit* kit = NULL;
@@ -237,6 +238,7 @@ public:
     }
   }
 
+//!xiaojin-intrinsics -2.5.2 C2AccessFence构造函数，可以看做是后置
   ~C2AccessFence() {
     GraphKit* kit = NULL;
     if (_access.is_parse_access()) {
@@ -282,6 +284,7 @@ public:
         assert(kit != NULL, "unsupported at optimization time");
         Node* n = _access.raw_access();
         assert(_leading_membar == NULL || support_IRIW_for_not_multiple_copy_atomic_cpu, "no leading membar expected");
+        ////!xiaojin-intrinsics -2.5.2 如果是 getAcquire 会到这里来。 Op_MemBarAcquire 的含义？
         Node* mb = kit->insert_mem_bar(Op_MemBarAcquire, n);
         mb->as_MemBar()->set_trailing_load();
       }
@@ -296,6 +299,7 @@ Node* BarrierSetC2::store_at(C2Access& access, C2AccessValue& val) const {
 }
 
 Node* BarrierSetC2::load_at(C2Access& access, const Type* val_type) const {
+  //!xiaojin-intrinsics -2.5 C2AccessFence 相当于在resolve_address前后加入了fence的构造函数与析构函数
   C2AccessFence fence(access);
   resolve_address(access);
   return load_at_resolved(access, val_type);
