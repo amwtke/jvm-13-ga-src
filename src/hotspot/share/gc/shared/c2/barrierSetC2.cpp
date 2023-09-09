@@ -284,7 +284,7 @@ public:
         assert(kit != NULL, "unsupported at optimization time");
         Node* n = _access.raw_access();
         assert(_leading_membar == NULL || support_IRIW_for_not_multiple_copy_atomic_cpu, "no leading membar expected");
-        ////!xiaojin-intrinsics -2.5.2 如果是 getAcquire 会到这里来。 Op_MemBarAcquire 的含义？
+        //!xiaojin-intrinsics -2.5.2.1 如果是 getAcquire 会到这里来。 Op_MemBarAcquire 的含义？
         Node* mb = kit->insert_mem_bar(Op_MemBarAcquire, n);
         mb->as_MemBar()->set_trailing_load();
       }
