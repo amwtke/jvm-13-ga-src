@@ -28,3 +28,5 @@ test/
 make/
 *.class
 *.java
+/config.log
+/configure.log
