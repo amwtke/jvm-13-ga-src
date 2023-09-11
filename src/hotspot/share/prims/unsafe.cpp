@@ -372,6 +372,7 @@ X64框架下，这个过程是通过这样的方法获得这个效果的：
 2、在运行时，在对state修改以后，要在store state之后加入一个storeload的屏障指令；因为x64平台loadload与storestore是不会乱序的。所以，保证其他CPU核心能够获取最新的值；这个效果是通过lockprefix实现，效果就是刷新store-buffer到CL，然后靠MESI协议——作用在CL上，保证变量读取的原子性。
 */ 
 //!xiaojin volatile -0.1 DEFINE_GETSETOOP_VOLATILE Unsafe_Get##Type##Volatile. volatile字节码调用的函数。
+//!xiaojin volatile-put -0 put_volatile
 #define DEFINE_GETSETOOP_VOLATILE(java_type, Type) \
  \
 UNSAFE_ENTRY(java_type, Unsafe_Get##Type##Volatile(JNIEnv *env, jobject unsafe, jobject obj, jlong offset)) { \
@@ -379,7 +380,6 @@ UNSAFE_ENTRY(java_type, Unsafe_Get##Type##Volatile(JNIEnv *env, jobject unsafe, 
 } UNSAFE_END \
  \
 UNSAFE_ENTRY(void, Unsafe_Put##Type##Volatile(JNIEnv *env, jobject unsafe, jobject obj, jlong offset, java_type x)) { \
-//!xiaojin volatile-put -0 put_volatile
   MemoryAccess<java_type>(thread, obj, offset).put_volatile(x); \
 } UNSAFE_END \
  \
