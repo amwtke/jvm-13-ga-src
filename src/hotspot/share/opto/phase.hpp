@@ -39,6 +39,7 @@ class PhaseGVN;
 // guide transforming the program.  When the Phase is deleted, so is any
 // cached analysis info.  This basic Phase class mostly contains timing and
 // memory management code.
+//!xiaojin phase编译优化的阶段定义
 class Phase : public StackObj {
 public:
   enum PhaseNumber {

@@ -200,7 +200,7 @@ typedef Node** DUIterator_Last;
 // Control and data are uniformly represented in the graph.  Finally, Nodes
 // have a unique dense integer index which is used to index into side arrays
 // whenever I have phase-specific information.
-
+//!xiaojin-node 好像很重要
 class Node {
   friend class VMStructs;
 

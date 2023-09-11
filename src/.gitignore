@@ -1,2 +1,6 @@
 utils/**
 targets/
+hotspot/.idea
+hotspot/cmake-build-debug
+hotspot/CMakeLists.txt
+
